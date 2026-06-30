@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Speed Tracker</title>
+  <style>
+    /* ---- Reset & base ---- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0f1115;
+      --card: #1a1d24;
+      --accent: #4a9eff;
+      --accent-dim: #2a6bb5;
+      --danger: #e0533d;
+      --danger-dim: #a83a28;
+      --text: #e8e8e8;
+      --text-dim: #8a8a8a;
+      --border: #2a2e38;
+      --green: #3ec77a;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ---- Layout ---- */
+    .app { max-width: 600px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; text-align: center; margin-bottom: 4px; }
+    .subtitle { text-align: center; color: var(--text-dim); font-size: 0.8rem; margin-bottom: 20px; }
+
+    /* ---- Distance setting ---- */
+    .settings {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .settings label { font-size: 0.9rem; flex-shrink: 0; }
+    .settings input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 1.1rem;
+      width: 100%;
+    }
+    .settings input:focus { outline: none; border-color: var(--accent); }
+    .settings .unit { font-size: 0.85rem; color: var(--text-dim); flex-shrink: 0; }
+
+    /* ---- Timer ---- */
+    .timer-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .timer-display {
+      font-size: 3.5rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+    .timer-display.active { color: var(--green); }
+    .btn-timer {
+      width: 100%;
+      padding: 18px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .btn-timer:active { transform: scale(0.98); }
+    .btn-start { background: var(--accent); color: #fff; }
+    .btn-start:active { background: var(--accent-dim); }
+    .btn-stop  { background: var(--danger); color: #fff; }
+    .btn-stop:active  { background: var(--danger-dim); }
+
+    /* ---- Result (shown after a reading) ---- */
+    .result {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .result-header {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .speed-main {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .speed-secondary { font-size: 0.95rem; color: var(--text-dim); margin-top: 4px; }
+
+    /* ---- Vehicle log form ---- */
+    .log-form {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .log-form h2 { font-size: 1rem; margin-bottom: 12px; }
+    .log-form input,
+    .log-form textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+      font-family: inherit;
+    }
+    .log-form input:focus,
+    .log-form textarea:focus { outline: none; border-color: var(--accent); }
+    .log-form textarea { resize: vertical; min-height: 60px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row > div { flex: 1; }
+    .btn-log {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      background: var(--green);
+      color: #0f1115;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .btn-log:active { opacity: 0.85; }
+    .btn-log:disabled { opacity: 0.4; cursor: default; }
+
+    /* ---- Log list ---- */
+    .log-section h2 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-export, .btn-clear {
+      font-size: 0.75rem;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--text-dim);
+      cursor: pointer;
+    }
+    .btn-export:active, .btn-clear:active { border-color: var(--accent); }
+    .log-entry {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    .log-entry-speed {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .log-entry-meta {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .log-entry-vehicle {
+      font-size: 0.85rem;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+    .log-entry-vehicle strong { color: var(--text); }
+    .log-entry-plate {
+      display: inline-block;
+      font-family: 'SF Mono', 'Courier New', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      margin-top: 6px;
+    }
+    .log-entry-delete {
+      float: right;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+    .log-entry-delete:active { color: var(--danger); }
+    .empty-state {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      padding: 24px;
+    }
+
+    /* ---- Hidden utility ---- */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Speed Tracker</h1>
+    <p class="subtitle">Measure vehicle speed over a known distance</p>
+
+    <!-- Distance setting -->
+    <div class="settings">
+      <label for="distance">Distance</label>
+      <input type="number" id="distance" value="100" min="1" step="any" inputmode="decimal">
+      <span class="unit">feet</span>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-card">
+      <div class="timer-display" id="timerDisplay">00:00.000</div>
+      <button class="btn-timer btn-start" id="timerBtn">Start</button>
+    </div>
+
+    <!-- Result (appears after stop) -->
+    <div class="result hidden" id="resultCard">
+      <div class="result-header">Measured Speed</div>
+      <div class="speed-main" id="speedMph">— mph</div>
+      <div class="speed-secondary" id="speedDetail">— ft/s over — seconds</div>
+    </div>
+
+    <!-- Vehicle log form (appears after a reading) -->
+    <div class="log-form hidden" id="logForm">
+      <h2>Log This Reading</h2>
+      <div class="form-row">
+        <div><input type="text" id="vehicleMake" placeholder="Make (e.g. Toyota)"></div>
+        <div><input type="text" id="vehicleModel" placeholder="Model (e.g. Camry)"></div>
+      </div>
+      <input type="text" id="licensePlate" placeholder="License plate">
+      <input type="text" id="vehicleColor" placeholder="Color (optional)">
+      <textarea id="driverDesc" placeholder="Driver description (e.g. male, 40s, glasses, red cap)"></textarea>
+      <button class="btn-log" id="saveLogBtn">Save Reading</button>
+    </div>
+
+    <!-- Log list -->
+    <div class="log-section">
+      <h2>
+        Logged Readings
+        <span>
+          <button class="btn-export" id="exportBtn">Export CSV</button>
+          <button class="btn-clear" id="clearBtn">Clear All</button>
+        </span>
+      </h2>
+      <div id="logList"></div>
+    </div>
+  </div>
+
+  <script>
+    // ---- State ----
+    let startTime = null;      // performance.now() reference when timer started
+    let rafId = null;          // requestAnimationFrame ID for the display loop
+    let lastReading = null;    // { elapsedMs, distanceFt, mph, fps } from most recent stop
+    let readings = [];         // array of logged reading objects
+
+    // ---- DOM refs ----
+    const distanceInput = document.getElementById('distance');
+    const timerDisplay  = document.getElementById('timerDisplay');
+    const timerBtn      = document.getElementById('timerBtn');
+    const resultCard    = document.getElementById('resultCard');
+    const speedMph      = document.getElementById('speedMph');
+    const speedDetail   = document.getElementById('speedDetail');
+    const logForm       = document.getElementById('logForm');
+    const saveLogBtn    = document.getElementById('saveLogBtn');
+    const logList       = document.getElementById('logList');
+    const exportBtn     = document.getElementById('exportBtn');
+    const clearBtn      = document.getElementById('clearBtn');
+
+    // Form fields
+    const fMake    = document.getElementById('vehicleMake');
+    const fModel   = document.getElementById('vehicleModel');
+    const fPlate   = document.getElementById('licensePlate');
+    const fColor   = document.getElementById('vehicleColor');
+    const fDriver  = document.getElementById('driverDesc');
+
+    // ---- Persistence ----
+    const STORAGE_KEY = 'speed_tracker_readings';
+    function loadReadings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        readings = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        readings = [];
+      }
+    }
+    function saveReadings() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(readings));
+    }
+
+    // ---- Timer logic ----
+    // Uses performance.now() for sub-millisecond precision rather than Date.now(),
+    // which is important for short intervals over 100 ft at highway speeds.
+    function formatTime(ms) {
+      const totalSec = ms / 1000;
+      const minutes  = Math.floor(totalSec / 60);
+      const seconds  = Math.floor(totalSec % 60);
+      const millis   = Math.floor(ms % 1000);
+      return String(minutes).padStart(2, '0') + ':' +
+             String(seconds).padStart(2, '0') + '.' +
+             String(millis).padStart(3, '0');
+    }
+
+    function updateDisplay() {
+      const elapsed = performance.now() - startTime;
+      timerDisplay.textContent = formatTime(elapsed);
+      rafId = requestAnimationFrame(updateDisplay);
+    }
+
+    function startTimer() {
+      // Require a valid distance before starting
+      const dist = parseFloat(distanceInput.value);
+      if (!dist || dist <= 0) {
+        alert('Please enter a valid distance in feet before starting.');
+        distanceInput.focus();
+        return;
+      }
+
+      // Hide any previous result/form
+      resultCard.classList.add('hidden');
+      logForm.classList.add('hidden');
+
+      startTime = performance.now();
+      timerDisplay.classList.add('active');
+      timerBtn.textContent = 'Stop';
+      timerBtn.classList.remove('btn-start');
+      timerBtn.classList.add('btn-stop');
+
+      // Lock the distance field while timing so it can't be changed mid-run
+      distanceInput.disabled = true;
+
+      updateDisplay();
+    }
+
+    function stopTimer() {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+
+      const elapsedMs = performance.now() - startTime;
+      const distFt    = parseFloat(distanceInput.value);
+
+      // Calculate speed:
+      //   ft/s = distance / seconds
+      //   mph  = ft/s × (3600 / 5280) = ft/s × 0.681818...
+      const seconds = elapsedMs / 1000;
+      const fps     = distFt / seconds;
+      const mph     = fps * (3600 / 5280);
+
+      // Update display to final precise value
+      timerDisplay.textContent = formatTime(elapsedMs);
+      timerDisplay.classList.remove('active');
+      timerBtn.textContent = 'Start';
+      timerBtn.classList.remove('btn-stop');
+      timerBtn.classList.add('btn-start');
+      distanceInput.disabled = false;
+
+      // Store for the log form
+      lastReading = { elapsedMs, distanceFt: distFt, mph, fps, seconds };
+
+      // Show result
+      speedMph.textContent    = mph.toFixed(1) + ' mph';
+      speedDetail.textContent = fps.toFixed(1) + ' ft/s · ' +
+                                 seconds.toFixed(3) + ' s · ' +
+                                 distFt + ' ft';
+      resultCard.classList.remove('hidden');
+
+      // Show log form, clear previous entries
+      logForm.classList.remove('hidden');
+      fMake.value = '';
+      fModel.value = '';
+      fPlate.value = '';
+      fColor.value = '';
+      fDriver.value = '';
+      fMake.focus();
+    }
+
+    timerBtn.addEventListener('click', () => {
+      if (startTime === null) {
+        startTimer();
+      } else {
+        stopTimer();
+        startTime = null;
+      }
+    });
+
+    // ---- Save reading ----
+    saveLogBtn.addEventListener('click', () => {
+      if (!lastReading) return;
+
+      const entry = {
+        id:        Date.now(),
+        timestamp: new Date().toISOString(),
+        distanceFt: lastReading.distanceFt,
+        elapsedMs:  lastReading.elapsedMs,
+        seconds:    lastReading.seconds,
+        mph:        lastReading.mph,
+        fps:        lastReading.fps,
+        make:       fMake.value.trim(),
+        model:      fModel.value.trim(),
+        plate:      fPlate.value.trim(),
+        color:      fColor.value.trim(),
+        driver:     fDriver.value.trim(),
+      };
+
+      readings.unshift(entry);  // newest first
+      saveReadings();
+      renderLog();
+
+      // Hide form & result after saving
+      logForm.classList.add('hidden');
+      resultCard.classList.add('hidden');
+      lastReading = null;
+    });
+
+    // ---- Render log list ----
+    function renderLog() {
+      if (readings.length === 0) {
+        logList.innerHTML = '<div class="empty-state">No readings logged yet.</div>';
+        return;
+      }
+
+      logList.innerHTML = readings.map(r => {
+        const date = new Date(r.timestamp);
+        // Format timestamp for display: "Jun 30, 2026 2:14 PM"
+        const dateStr = date.toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        }) + ' ' + date.toLocaleTimeString('en-US', {
+          hour: 'numeric', minute: '2-digit', hour12: true
+        });
+
+        let html = '<div class="log-entry">';
+        html += '<button class="log-entry-delete" data-id="' + r.id + '">×</button>';
+        html += '<div class="log-entry-speed">' + r.mph.toFixed(1) + ' mph</div>';
+        html += '<div class="log-entry-meta">' +
+                  r.fps.toFixed(1) + ' ft/s · ' +
+                  r.seconds.toFixed(3) + ' s · ' +
+                  r.distanceFt + ' ft · ' + dateStr +
+                '</div>';
+
+        // Vehicle details (only show fields that have content)
+        const parts = [];
+        if (r.color) parts.push(r.color);
+        if (r.make)  parts.push(r.make);
+        if (r.model) parts.push(r.model);
+        if (parts.length) {
+          html += '<div class="log-entry-vehicle"><strong>Vehicle:</strong> ' + parts.join(' ') + '</div>';
+        }
+        if (r.plate) {
+          html += '<div class="log-entry-plate">' + escapeHtml(r.plate) + '</div>';
+        }
+        if (r.driver) {
+          html += '<div class="log-entry-vehicle"><strong>Driver:</strong> ' + escapeHtml(r.driver) + '</div>';
+        }
+        html += '</div>';
+        return html;
+      }).join('');
+
+      // Wire up delete buttons
+      logList.querySelectorAll('.log-entry-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = parseInt(e.target.dataset.id);
+          readings = readings.filter(r => r.id !== id);
+          saveReadings();
+          renderLog();
+        });
+      });
+    }
+
+    // Basic HTML escaping for user-entered text
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ---- Export to CSV ----
+    exportBtn.addEventListener('click', () => {
+      if (readings.length === 0) {
+        alert('No readings to export.');
+        return;
+      }
+
+      const headers = [
+        'Timestamp', 'Date', 'Time',
+        'Distance (ft)', 'Elapsed (ms)', 'Seconds',
+        'Speed (mph)', 'Speed (ft/s)',
+        'Make', 'Model', 'Color', 'License Plate', 'Driver Description'
+      ];
+
+      const rows = readings.map(r => {
+        const d = new Date(r.timestamp);
+        const datePart = d.toLocaleDateString('en-US');
+        const timePart = d.toLocaleTimeString('en-US');
+        return [
+          r.timestamp,
+          datePart,
+          timePart,
+          r.distanceFt,
+          r.elapsedMs.toFixed(3),
+          r.seconds.toFixed(3),
+          r.mph.toFixed(2),
+          r.fps.toFixed(2),
+          csvEscape(r.make),
+          csvEscape(r.model),
+          csvEscape(r.color),
+          csvEscape(r.plate),
+          csvEscape(r.driver),
+        ].join(',');
+      });
+
+      const csv = headers.join(',') + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url  = URL.createObjectURL(blob);
+
+      // Create a temporary download link
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'speed-tracker-' +
+                   new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    function csvEscape(str) {
+      if (!str) return '';
+      // Wrap in quotes and escape any inner quotes
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+
+    // ---- Clear all ----
+    clearBtn.addEventListener('click', () => {
+      if (readings.length === 0) return;
+      if (confirm('Delete all logged readings? This cannot be undone.')) {
+        readings = [];
+        saveReadings();
+        renderLog();
+      }
+    });
+
+    // ---- Prevent accidental distance change during active timer ----
+    distanceInput.addEventListener('keydown', (e) => {
+      if (startTime !== null) e.preventDefault();
+    });
+
+    // ---- Init ----
+    loadReadings();
+    renderLog();
+  </script>
+</body>
+</html>
