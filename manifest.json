@@ -1,0 +1,15 @@
+{
+  "name": "Beer Speed",
+  "short_name": "Beer Speed",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ],
+  "display": "standalone",
+  "start_url": "./index.html",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115"
+}
